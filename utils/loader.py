@@ -1,3 +1,4 @@
+import repackage
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone, ServerlessSpec
 from pinecone.core.openapi.shared.exceptions import (
@@ -5,6 +6,7 @@ from pinecone.core.openapi.shared.exceptions import (
     PineconeApiException,
 )
 
+repackage.up()
 from cfg.config import load_config
 
 config = load_config()
@@ -125,11 +127,25 @@ class PineconeConnection:
         vectors_to_upsert = [(ids[i], embeddings[i]) for i in range(len(dataset))]
 
         # Upsert vectors into Pinecone index
-        self.pinecone.Index(self.index_name).upsert(
-            vectors=vectors_to_upsert, namespace=namespace
-        )
-
+        try:
+            self.pinecone.Index(self.index_name).upsert(
+                vectors=vectors_to_upsert, namespace=namespace
+            )
+        except NotFoundException:
+            self.create_index()
+            self.pinecone.Index(self.index_name).upsert(
+                vectors=vectors_to_upsert, namespace=namespace
+            )
         print(
             f"Successfully upserted {len(vectors_to_upsert)} vectors \
                 into the index `{self.index_name}`."
         )
+
+
+if __name__ == "__main__":
+    dataset = [
+        "Your boarding pass may be on your phone or be printed on a piece of paper."
+    ]
+    ids = ["0"]
+    pc = PineconeConnection()
+    pc.load_dataset_and_upsert(dataset, ids)
