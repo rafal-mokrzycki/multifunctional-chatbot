@@ -37,20 +37,22 @@ class PineconeConnection:
         self.region = region
         self.embeddings_model = OpenAIEmbeddings(api_key=config["openai"]["api_key"])
 
-    def create_index(self) -> None:
+    def create_index(self, index_name: str | None = None) -> None:
         """
         Creates index if not exists.
         """
+        if index_name is None:
+            index_name = self.index_name
         try:
             self.pinecone.create_index(
-                name=self.index_name,
+                name=index_name,
                 dimension=1536,
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
-            print(f"Index `{self.index_name}` created.")
+            print(f"Index `{index_name}` created.")
         except PineconeApiException:
-            print(f"Index `{self.index_name}` already exists.")
+            print(f"Index `{index_name}` already exists.")
 
     def _delete_index(self) -> None:
         """
