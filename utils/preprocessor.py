@@ -1,29 +1,78 @@
-import asyncio
 import os
 
+import pandas as pd
+import repackage
+import spacy
+import tiktoken
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
+from openai import OpenAI
 
-STRINGS_TO_REPLACE = {"• ": ""}
+repackage.up()
+from cfg.config import load_config
+
+STRINGS_TO_REPLACE = {"• ": "", "\n": " ", "  ": " ", "   ": " "}
+TOKENIZER = tiktoken.get_encoding("cl100k_base")
+config = load_config()
+
+client = OpenAI(api_key=config["openai"]["api_key"])
 
 
-def main():
+def prepare_dataset():
     text = load_pdf()
     text_cleaned = replace_forbidden_chars(text)
     text_chunked = chunk_text(text_cleaned)
+    embeddings = generate_embeddings(text_chunked)
+    return get_dataset_from_text(embeddings)
 
 
-async def load_pdf():
+def tiktoken_len(text):
+    tokens = TOKENIZER.encode(text, disallowed_special=())
+    print("len(tokens)")
+    len(tokens)
+    return len(tokens)
+
+
+def get_chunks(text):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=400,
+        chunk_overlap=20,
+        length_function=tiktoken_len,
+        separators=["\n\n", "\n", " ", ""],
+    )
+
+    return text_splitter.split_text(text)
+
+
+def generate_embeddings(text_chunks):
+    embeddings = []
+    for text in text_chunks:
+        # print(f"Processing text: {text}, Type: {type(text)}")  # Debugging line
+        if isinstance(text, str):
+            inputs = TOKENIZER.encode(text)
+            embedding_response = client.embeddings.create(
+                input=inputs, model="text-embedding-3-small"
+            )
+            embedding = embedding_response.data[0].embedding
+            embeddings.append(embedding)
+        else:
+            print(f"Expected string but got {type(text)}: {text}")
+    return embeddings
+
+
+def load_pdf():
+    files = []
     for file_name in os.listdir("data"):
         if file_name.endswith(".pdf"):
             filepath = os.path.abspath(os.path.join("data", file_name))
             loader = PyPDFLoader(filepath)
+            documents = loader.load()
             pages = []
-            async for page in loader.alazy_load():
-                pages.append(page)
-            print(f"{pages[0].metadata}\n")
-            # print(type(pages[0].page_content))
-            # print(pages[0].page_content)
-            return " ".join(pages)
+            for doc in documents:
+                pages.append(doc.page_content)
+        files.append(" ".join(pages))
+    print(" ".join(files)[:100])
+    return " ".join(files)
 
 
 def replace_forbidden_chars(
@@ -85,7 +134,16 @@ def chunk_text(text: str) -> list[str]:
     return result
 
 
+def get_dataset_from_text(embeddings):
+    data = [
+        {
+            "id": f"id-{i}",
+            "values": embedding,  # Ensure this is a list of floats
+        }
+        for i, embedding in enumerate(embeddings)
+    ]
+    return pd.DataFrame(data)
+
+
 if __name__ == "__main__":
-    # Run the async function
-    # asyncio.run(load_pdf())
-    main()
+    prepare_dataset()

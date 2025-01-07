@@ -9,6 +9,7 @@ Chatbot to get information from text files using LLMs.
 python -m venv .venv
 source .venv/bin/activate # (.venv\Scripts\activate for Windows)
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 ```
 
 2. For Linux:

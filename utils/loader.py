@@ -6,13 +6,16 @@ from pinecone import Pinecone, ServerlessSpec
 
 repackage.up()
 from cfg.config import load_config
+from utils.preprocessor import prepare_dataset
 
 config = load_config()
 
 
-def load_data_from_dataset(dataset: pd.DataFrame):
+def load_data_from_dataset(dataset: pd.DataFrame | None = None):
     api_key = config["pinecone"]["api_key"]
     index_name = config["pinecone"]["index_name"]
+    if dataset is None:
+        dataset = prepare_dataset()
     # create Pinecone instance
     pc = Pinecone(api_key=api_key)
     # create index if not exists
@@ -32,3 +35,7 @@ def load_data_from_dataset(dataset: pd.DataFrame):
     # upsert the data to Pinecone
     index = pc.Index(index_name)
     index.upsert_from_dataframe(dataset, batch_size=100)
+
+
+if __name__ == "__main__":
+    load_data_from_dataset()
