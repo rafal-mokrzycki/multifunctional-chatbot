@@ -3,12 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 import repackage
-from pinecone.core.openapi.shared.exceptions import (
-    NotFoundException,
-    PineconeApiException,
-)
 
-# Assuming load_data_from_dataset is imported from your module
 repackage.up()
 from utils.loader import load_data_from_dataset
 
@@ -34,7 +29,7 @@ def sample_dataframe():
         {
             "id": ["1", "2", "3"],
             "values": [
-                [0.2342352] * 1536,  # Create a vector of dimension 1536
+                [0.2342352] * 1536,
                 [0.34654542] * 1536,
                 [0.877564] * 1536,
             ],
@@ -45,6 +40,7 @@ def sample_dataframe():
 def test_load_data_with_provided_dataframe(mock_pinecone, sample_dataframe):
     # Arrange
     mock_pinecone_instance = mock_pinecone.return_value
+
     # Ensure list_indexes returns an empty list to trigger index creation
     mock_pinecone_instance.list_indexes.return_value.names.return_value = []
     mock_pinecone_instance.describe_index.return_value.status = {"ready": True}
@@ -99,6 +95,4 @@ def test_load_data_index_exists(mock_pinecone, sample_dataframe):
     load_data_from_dataset(sample_dataframe)
 
     # Assert
-    assert (
-        not mock_pinecone_instance.create_index.called
-    )  # Ensure create_index is not called
+    assert not mock_pinecone_instance.create_index.called
