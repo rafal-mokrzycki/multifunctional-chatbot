@@ -132,8 +132,10 @@ class PDFProcessor:
 
         # Prepare data for upsert
         data_to_upsert = [
-            {"id": f"id-{i}", "values": embedding}
-            for i, embedding in enumerate(self.embeddings)
+            {"id": f"id-{i}", "values": embedding, "metadata": {"text": chunk}}
+            for i, (embedding, chunk) in enumerate(
+                zip(self.embeddings, self.chunk_text())
+            )
         ]
 
         # Upsert embeddings

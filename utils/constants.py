@@ -4,6 +4,7 @@ class Constants:
     TIKTOKEN_ENCODING = "cl100k_base"
     OPENAI_MODEL_NAME = "o1-mini"
     STRINGS_TO_REPLACE = {"• ": "", "\n": " ", "  ": " ", "   ": " "}
+    SPECIFIC_KEYWORDS = ["British Airways", "Flight", "Flight Ticket"]
 
 
 # ConstantsManagement class
