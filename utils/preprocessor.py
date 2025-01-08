@@ -26,14 +26,28 @@ def prepare_dataset():
     return get_dataset_from_text(embeddings)
 
 
-def tiktoken_len(text):
+def tiktoken_len(text: str) -> int:
+    """Returns the length of tokens.
+
+    Args:
+        text (str): Text to apply function on.
+
+    Returns:
+        int: Length of tokens.
+    """
     tokens = TOKENIZER.encode(text, disallowed_special=())
-    print("len(tokens)")
-    len(tokens)
     return len(tokens)
 
 
-def get_chunks(text):
+def get_chunks(text: str) -> list[str]:
+    """Splits text and returns chunks.
+
+    Args:
+        text (str): Text to split.
+
+    Returns:
+        list[str]: Chunks after splitting.
+    """
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=400,
         chunk_overlap=20,
@@ -44,10 +58,17 @@ def get_chunks(text):
     return text_splitter.split_text(text)
 
 
-def generate_embeddings(text_chunks):
+def generate_embeddings(text_chunks: list[str]) -> list[list[float]]:
+    """Generates embeddingsfor vector store.
+
+    Args:
+        text_chunks (list[str]): Text chunks.
+
+    Returns:
+        list[list[float]]: Embeddings.
+    """
     embeddings = []
     for text in text_chunks:
-        # print(f"Processing text: {text}, Type: {type(text)}")  # Debugging line
         if isinstance(text, str):
             inputs = TOKENIZER.encode(text)
             embedding_response = client.embeddings.create(
@@ -60,7 +81,12 @@ def generate_embeddings(text_chunks):
     return embeddings
 
 
-def load_pdf():
+def load_pdf() -> str:
+    """Reads PDF files from directory `data` and joins them into one string.
+
+    Returns:
+        str: Joined PDF files as string.
+    """
     files = []
     for file_name in os.listdir("data"):
         if file_name.endswith(".pdf"):
@@ -71,7 +97,6 @@ def load_pdf():
             for doc in documents:
                 pages.append(doc.page_content)
         files.append(" ".join(pages))
-    print(" ".join(files)[:100])
     return " ".join(files)
 
 
@@ -134,7 +159,15 @@ def chunk_text(text: str) -> list[str]:
     return result
 
 
-def get_dataset_from_text(embeddings):
+def get_dataset_from_text(embeddings: list[list[float]]) -> pd.DataFrame:
+    """Converts embeddings into a pd.DataFrame with columns: `id` and `values`.
+
+    Args:
+        embeddings (list[list[float]]): Embeddings.
+
+    Returns:
+        pd.DataFrame: Dataframe with columns: `id` and `values`.
+    """
     data = [
         {
             "id": f"id-{i}",

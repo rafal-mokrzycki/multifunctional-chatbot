@@ -11,7 +11,14 @@ from utils.preprocessor import prepare_dataset
 config = load_config()
 
 
-def load_data_from_dataset(dataset: pd.DataFrame | None = None):
+def load_data_from_dataset(dataset: pd.DataFrame | None = None) -> None:
+    """Reads a dataframe and upserts vectors to vectorstore.
+
+    Args:
+        dataset (pd.DataFrame | None, optional): Dataframe to read. If None calls
+        a function prepare_dataset() in order to preprocess default files.
+        Defaults to None.
+    """
     api_key = config["pinecone"]["api_key"]
     index_name = config["pinecone"]["index_name"]
     if dataset is None:
