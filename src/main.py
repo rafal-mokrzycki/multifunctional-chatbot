@@ -131,6 +131,7 @@ def handle_conversation(context, question, log_file_path=None):
     >>> print(response)  # Outputs the chatbot's response to the
     ... question.
     """
+
     result = chain.invoke({"context": context, "question": question})
 
     # If log_file_path is provided, log the conversation
@@ -139,8 +140,8 @@ def handle_conversation(context, question, log_file_path=None):
             log_file.write(f"User: {question}\n")
             log_file.write(f"AI: {result}\n")
 
-    return result  # Return the result instead of printing it
+    return result
 
 
 if __name__ == "__main__":
-    handle_conversation()  # Run in CLI mode
+    handle_conversation()
