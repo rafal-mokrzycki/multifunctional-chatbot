@@ -1,4 +1,5 @@
 import os
+import re
 
 import repackage
 import tiktoken
@@ -52,11 +53,14 @@ class PDFProcessor:
         Returns:
             (str | list[str]): Text or list of texts.
         """
+
         if replacement_dict is None:
             replacement_dict = CONSTANTS.STRINGS_TO_REPLACE
         elif not isinstance(replacement_dict, dict):
             raise TypeError("Must be a dictionary.")
         if isinstance(self.text, str):
+            # Paragraph numbers removal (eg. '08 ')
+            self.text = re.sub(r"\s*\d{2}\s*", " ", self.text)
             for key in replacement_dict:
                 self.text = self.text.replace(key, replacement_dict[key])
 
@@ -65,6 +69,7 @@ class PDFProcessor:
             for elem in self.text:
                 if not isinstance(elem, str):
                     raise TypeError("Text must be string or list of strings.")
+                elem = re.sub(r"\s*\d{2}\s*", " ", elem)
                 for key in replacement_dict:
                     elem = elem.replace(key, replacement_dict[key])
                 result.append(elem)
