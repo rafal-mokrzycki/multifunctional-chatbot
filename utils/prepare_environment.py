@@ -69,6 +69,7 @@ class PDFProcessor:
             for elem in self.text:
                 if not isinstance(elem, str):
                     raise TypeError("Text must be string or list of strings.")
+                # Paragraph numbers removal (eg. '08 ')
                 elem = re.sub(r"\s*\d{2}\s*", " ", elem)
                 for key in replacement_dict:
                     elem = elem.replace(key, replacement_dict[key])
