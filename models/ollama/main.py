@@ -1,8 +1,43 @@
 import datetime
 import os
 
+import repackage
+import tiktoken
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.schema import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
+from langchain_openai import ChatOpenAI
+from openai import OpenAI
+from pinecone import Pinecone
+
+repackage.up()
+from cfg.config import load_config
+from utils.constants import ConstantsManagement
+
+CONFIG = load_config()
+CONSTANTS = ConstantsManagement()
+CLIENT = OpenAI(api_key=CONFIG["openai_api_key"])
+
+llm = ChatOpenAI(api_key=CONFIG["openai_api_key"], model="gpt-4o-mini")
+
+
+def initialize_pinecone() -> Pinecone.Index:
+    """Initialize Pinecone Index
+
+    Returns:
+        Pinecone.Index: Pinecone Index
+    """
+    api_key = CONFIG["pinecone_api_key"]
+    index_name = CONSTANTS.PINECONE_INDEX_NAME
+    environment = CONSTANTS.PINECONE_ENVIRONMENT
+
+    # Initialize Pinecone
+    pc = Pinecone(api_key=api_key, environment=environment)
+    return pc.Index(index_name)
+
+
+index = initialize_pinecone()
 
 template = """
 Answer the question below.
@@ -17,6 +52,35 @@ Answer:
 model = OllamaLLM(model="llama3")
 prompt = ChatPromptTemplate.from_template(template)
 chain = prompt | model
+
+
+def retrieve_from_pinecone(query):
+    """Retrieve relevant information from Pinecone based on the query."""
+    query_embedding = generate_query_embedding(query)
+    response = index.query(vector=query_embedding, top_k=5, include_metadata=True)
+    return [match["metadata"]["text"] for match in response["matches"]]
+
+
+def generate_query_embedding(query):
+    """Generate an embedding for the given query."""
+    # Tokenize the input query
+    tokenizer = tiktoken.get_encoding(CONSTANTS.TIKTOKEN_ENCODING)
+    inputs = tokenizer.encode(query)
+
+    # Call OpenAI API to generate embeddings
+    embedding_response = CLIENT.embeddings.create(
+        input=inputs, model="text-embedding-3-small"
+    )
+
+    # Extract and return the embedding from the response
+    return embedding_response.data[0].embedding
+
+
+def is_specific_topic(query):
+    """Determine if the query is for a specific topic."""
+    return any(
+        keyword.lower() in query.lower() for keyword in CONSTANTS.SPECIFIC_KEYWORDS
+    )
 
 
 def handle_conversation_decorator(func):
@@ -131,16 +195,70 @@ def handle_conversation(context, question, log_file_path=None):
     >>> print(response)  # Outputs the chatbot's response to the
     ... question.
     """
-    result = chain.invoke({"context": context, "question": question})
+    if is_specific_topic(question):
+        pinecone_results = retrieve_from_pinecone(question)
+        if pinecone_results:
+            # Generate a short answer from retrieved results
+            result = generate_short_answer(pinecone_results)
+        else:
+            result = generate_default_response(question)
+    else:
+        result = chain.invoke({"context": context, "question": question})
 
-    # If log_file_path is provided, log the conversation
     if log_file_path:
         with open(log_file_path, "a") as log_file:
             log_file.write(f"User: {question}\n")
             log_file.write(f"AI: {result}\n")
+    return result
 
-    return result  # Return the result instead of printing it
+
+def generate_short_answer(results):
+    """
+    Generate a concise answer from retrieved results using Langchain.
+
+    Parameters:
+    ----------
+    results : list
+        List of results retrieved from Pinecone.
+
+    Returns:
+    -------
+    str
+        A short summary or key point derived from results.
+    """
+    # Convert strings to Document objects
+    documents = [Document(page_content=result) for result in results]
+
+    # Create a prompt template for summarization
+    prompt_template = ChatPromptTemplate.from_messages(
+        [("system", "Write a concise summary of the following:\n\n{context}")]
+    )
+
+    # Create the Stuff chain for summarization
+    stuff_chain = create_stuff_documents_chain(llm, prompt_template)
+
+    # Join the results into a single string for summarization
+    context = "\n".join(results)
+
+    # Run the chain to get the summary
+    summary = stuff_chain.invoke({"context": documents})
+
+    return summary
 
 
-if __name__ == "__main__":
-    handle_conversation()  # Run in CLI mode
+def generate_default_response(question):
+    """
+    Generate a default response based on general knowledge.
+
+    Parameters:
+    ----------
+    question : str
+        The user's question.
+
+    Returns:
+    -------
+    str
+        A valid answer generated from general knowledge.
+    """
+    # Implement logic to generate an answer based on general knowledge.
+    return "I'm not sure about that. Can you please provide more details?"
