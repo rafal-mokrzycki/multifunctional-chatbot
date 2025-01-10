@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from models.ollama.main import handle_conversation
+from src.main import handle_conversation
+from utils.logger import CustomLogger
 
 app = FastAPI()
 
@@ -16,6 +17,7 @@ class QuestionRequest(BaseModel):
 
 # Store conversation history in memory (for simplicity)
 context = ""
+log_file_path = None  # Initialize log file path globally
 
 # Serve static files (CSS) from the static directory
 app.mount("/static", StaticFiles(directory="ui/static"), name="static")
@@ -90,9 +92,20 @@ async def ask(request: QuestionRequest):
             "answer": "I am your AI chatbot!"
         }
     """
-    global context
+    global context, log_file_path
+    custom_logger = CustomLogger(log_file_path)
+
+    # Create a new log file for each session if it doesn't exist
+    custom_logger.create_log_file()
+    custom_logger.create_directory()
+
     answer = handle_conversation(context, request.question)
+
+    # Log the conversation to the file
+    custom_logger.write_logs(request.question, answer)
+
     context += f"\nUser: {request.question}\nAI: {answer}"
+
     return {"answer": answer}
 
 

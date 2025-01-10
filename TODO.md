@@ -8,9 +8,9 @@
 - [x] Implement main functionality of the ollama chatbot
 - [ ] Implement main functionality of another chatbot
 - [ ] Implement main functionality of files parsing (PDF, DOCX)
-- [ ] Write unit tests for critical functions
-- [ ] Document code with comments and docstrings
-- [ ] Implement logging for debugging and monitoring
+- [x] Write unit tests for critical functions
+- [x] Document code with comments and docstrings
+- [x] Implement logging for debugging and monitoring
 - [ ] Optimize performance of the chatbot model
 - [ ] Plan for deployment (e.g., Flask app, Docker)
 - [x] Create a user interface (CLI or GUI)
