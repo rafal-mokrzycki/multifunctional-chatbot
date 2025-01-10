@@ -1,27 +1,46 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0;  /* Light grey background */
+    background-color: #e0f7fa;  /* Light blue background */
     margin: 0;
     padding: 20px;
 }
 
 h1 {
     color: #333;
+    text-align: center; /* Center the title */
 }
 
 #conversation {
     border: 1px solid #ccc;
     padding: 10px;
-    height: 300px;
+    height: 150px; /* Reduced height to make it smaller */
     overflow-y: scroll;
     background-color: #ffffff; /* White background for conversation area */
+    margin: 0 auto; /* Center the conversation window */
+    width: 50%; /* Set width to 80% of the page */
+}
+
+#chat-form {
+    display: flex; /* Use flexbox for input and button layout */
+    justify-content: center; /* Center items horizontally */
+    margin-top: 20px; /* Add space above the form */
 }
 
 #user-input {
-    width: 70%;
+    width: 40%;
     padding: 10px;
 }
 
 button {
     padding: 10px;
+    margin-left: 10px;
+    border-radius: 5px; /* Less rounding for button */
+    background-color: #007bff; /* Blue color */
+    color: white;
+    border: none; /* Remove default border */
+    transition: background-color 0.3s ease; /* Slow down hover transition */
+}
+
+button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
 }

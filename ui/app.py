@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from src.main import handle_conversation
 from utils.logger import CustomLogger
 
-app = FastAPI()
+app = FastAPI(reload=True)
 
 
 # Define a Pydantic model for the request body
