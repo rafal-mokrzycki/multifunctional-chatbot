@@ -3,8 +3,9 @@ import re
 
 import repackage
 import tiktoken
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_openai.embeddings import OpenAIEmbeddings
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 
@@ -29,6 +30,7 @@ class PDFProcessor:
         Returns:
             str: Joined PDF files as string.
         """
+        # TODO: Fix PDF load (headlines should be at the beginning of each paragraph)
         files = []
         for file_name in os.listdir("data"):
             if file_name.endswith(".pdf"):
@@ -60,7 +62,9 @@ class PDFProcessor:
             raise TypeError("Must be a dictionary.")
         if isinstance(self.text, str):
             # Paragraph numbers removal (eg. '08 ')
-            self.text = re.sub(r"\s*\d{2}\s*", " ", self.text)
+            self._remove_numbers()
+            # Footer removal ('For more information, please...')
+            self._remove_footer()
             for key in replacement_dict:
                 self.text = self.text.replace(key, replacement_dict[key])
 
@@ -70,7 +74,9 @@ class PDFProcessor:
                 if not isinstance(elem, str):
                     raise TypeError("Text must be string or list of strings.")
                 # Paragraph numbers removal (eg. '08 ')
-                elem = re.sub(r"\s*\d{2}\s*", " ", elem)
+                elem = self._remove_numbers(elem)
+                # Footer removal ('For more information, please...')
+                elem = self._remove_footer(elem)
                 for key in replacement_dict:
                     elem = elem.replace(key, replacement_dict[key])
                 result.append(elem)
@@ -87,12 +93,9 @@ class PDFProcessor:
         Returns:
             list[str]: Chunks after splitting.
         """
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=400,
-            chunk_overlap=20,
-            length_function=self.tiktoken_len,
-            separators=["\n\n", "\n", " ", ""],
-        )
+        # TODO: Split also on 3-sentence overlapping parts
+        embed = OpenAIEmbeddings(api_key=CONFIG["openai_api_key"])
+        text_splitter = SemanticChunker(embed, breakpoint_threshold_type="gradient")
 
         return text_splitter.split_text(self.text)
 
@@ -158,6 +161,22 @@ class PDFProcessor:
         """
         tokens = self.tokenizer.encode(text, disallowed_special=())
         return len(tokens)
+
+    def _remove_numbers(self, string: str | None = None) -> str | None:
+        pattern = r"\s*\d{2}\s*"
+        repl = " "
+        if string is None:
+            self.text = re.sub(pattern, repl, self.text)
+        else:
+            return re.sub(pattern, repl, string)
+
+    def _remove_footer(self, string: str | None = None) -> str | None:
+        pattern = r"s*For more information, please visit|www.ba.com/visual-guide\s*"
+        repl = ""
+        if string is None:
+            self.text = re.sub(pattern, repl, self.text)
+        else:
+            return re.sub(pattern, repl, string)
 
 
 class PDFProcessorBuilder:

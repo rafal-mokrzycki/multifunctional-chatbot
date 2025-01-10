@@ -1,6 +1,8 @@
 class Constants:
     PINECONE_ENVIRONMENT = "us-east-1"
     PINECONE_INDEX_NAME = "british-airways"
+    PINECONE_NAMESPACE_DOCUMENTS = "documents"
+    PINECONE_NAMESPACE_VECTORS = "vectors"
     TIKTOKEN_ENCODING = "cl100k_base"
     OPENAI_MODEL_NAME = "o1-mini"
     STRINGS_TO_REPLACE = {"• ": "", "\n": " ", "  ": " ", "   ": " "}

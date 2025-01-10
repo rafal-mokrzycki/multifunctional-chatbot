@@ -3,8 +3,11 @@ import os
 
 import repackage
 import tiktoken
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.schema import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
+from langchain_openai import ChatOpenAI
 from openai import OpenAI
 from pinecone import Pinecone
 
@@ -15,6 +18,8 @@ from utils.constants import ConstantsManagement
 CONFIG = load_config()
 CONSTANTS = ConstantsManagement()
 CLIENT = OpenAI(api_key=CONFIG["openai_api_key"])
+
+llm = ChatOpenAI(api_key=CONFIG["openai_api_key"], model="gpt-4o-mini")
 
 
 def initialize_pinecone() -> Pinecone.Index:
@@ -68,7 +73,7 @@ def generate_query_embedding(query):
     )
 
     # Extract and return the embedding from the response
-    return embedding_response.data[0].embedding  # Adjust based on your model's output
+    return embedding_response.data[0].embedding
 
 
 def is_specific_topic(query):
@@ -193,9 +198,10 @@ def handle_conversation(context, question, log_file_path=None):
     if is_specific_topic(question):
         pinecone_results = retrieve_from_pinecone(question)
         if pinecone_results:
-            result = "\n".join(pinecone_results)
+            # Generate a short answer from retrieved results
+            result = generate_short_answer(pinecone_results)
         else:
-            result = "I couldn't find any specific information on that topic."
+            result = generate_default_response(question)
     else:
         result = chain.invoke({"context": context, "question": question})
 
@@ -204,3 +210,55 @@ def handle_conversation(context, question, log_file_path=None):
             log_file.write(f"User: {question}\n")
             log_file.write(f"AI: {result}\n")
     return result
+
+
+def generate_short_answer(results):
+    """
+    Generate a concise answer from retrieved results using Langchain.
+
+    Parameters:
+    ----------
+    results : list
+        List of results retrieved from Pinecone.
+
+    Returns:
+    -------
+    str
+        A short summary or key point derived from results.
+    """
+    # Convert strings to Document objects
+    documents = [Document(page_content=result) for result in results]
+
+    # Create a prompt template for summarization
+    prompt_template = ChatPromptTemplate.from_messages(
+        [("system", "Write a concise summary of the following:\n\n{context}")]
+    )
+
+    # Create the Stuff chain for summarization
+    stuff_chain = create_stuff_documents_chain(llm, prompt_template)
+
+    # Join the results into a single string for summarization
+    context = "\n".join(results)
+
+    # Run the chain to get the summary
+    summary = stuff_chain.invoke({"context": documents})
+
+    return summary
+
+
+def generate_default_response(question):
+    """
+    Generate a default response based on general knowledge.
+
+    Parameters:
+    ----------
+    question : str
+        The user's question.
+
+    Returns:
+    -------
+    str
+        A valid answer generated from general knowledge.
+    """
+    # Implement logic to generate an answer based on general knowledge.
+    return "I'm not sure about that. Can you please provide more details?"
