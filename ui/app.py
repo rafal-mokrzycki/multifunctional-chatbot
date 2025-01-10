@@ -1,13 +1,10 @@
-import datetime
-import os
-
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from models.ollama.main import handle_conversation
+from src.main import handle_conversation
 from utils.logger import CustomLogger
 
 app = FastAPI()
