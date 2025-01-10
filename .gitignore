@@ -164,6 +164,7 @@ cython_debug/
 # Config stuff
 .vscode
 .flake8
+config.json
 
 # Logs
 /logs

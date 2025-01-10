@@ -1,33 +1,34 @@
-# llm-chatbot
-Chatbot to get information from PDFs using LLMs
+# Multifunctional Chatbot
+Chatbot to get information from text files using LLMs.
 
-## Preparation
+## Installation
 
-### Install Ollama
+1. Run:
 
-1. Go to [https://ollama.com/download](https://ollama.com/download) and download Ollama for your OS.
-2. Run the installation script.
-3. For Windows make sure you added a system environmental variable `OLLAMA_MODELS`: `{folder}`.
-4. Run `ollama pull mistral` in the command line inside virtual environment.
-5. Run `ollama run llama3.2:1b` in order to install a language model.
+```
+python -m venv .venv
+source .venv/bin/activate # (.venv\Scripts\activate for Windows)
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+```
 
-### Install required packages
+2. For Linux:
 
-Run `pip install -r requirements.txt`.
+```
+curl https://ollama.ai/install.sh | sh
+ollama pull mistral
+ollama run llama3.2:1b
+```
+
+3. For Windows:
+- Go to [https://ollama.com/download](https://ollama.com/download) and download Ollama for your OS.
+- Run the installation script.
+- For Windows make sure you added a system environmental variable `OLLAMA_MODELS`: `{folder}`.
+- Run `ollama pull mistral` in the command line inside virtual environment.
+- Run `ollama run llama3.2:1b` in order to install a language model.
 
 ## Usage
 
-### GUI
-
 1. Activate virtual environment: `.venv\Scripts\activate`.
-2. Run app: `python -m  ui.app`.
-3. Go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your browser.
-
-### CLI
-
-1. Activate virtual environment: `.venv\Scripts\activate`.
-2. Run app: `python models/ollama/main.py`
-
-## Testing and Debugging
-
-For testing purposes, run `pytest tests/test_logger.py`.
+2. Run app: `python -m  ui.app` and go to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your browser.
+3. Alternatively, run app like so: `python models/ollama/main.py` and talk to the bot via terminal.
